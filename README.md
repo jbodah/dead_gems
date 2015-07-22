@@ -1,6 +1,6 @@
 # DeadGems
 
-TODO: Write a gem description
+- assumes using bundler
 
 ## Installation
 

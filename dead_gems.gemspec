@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = DeadGems::VERSION
   spec.authors       = ["Josh Bodah"]
   spec.email         = ["jb3689@yahoo.com"]
-  spec.summary       = %q{TODO: Write a short summary. Required.}
-  spec.description   = %q{TODO: Write a longer description. Optional.}
+  spec.summary       = %q{a gem for finding unused gems in your project}
+  spec.description   = %q{dead_gems works by analyzing your gem dependencies and running an exerciser script to see if any of them were used}
   spec.homepage      = ""
   spec.license       = "MIT"
 
@@ -20,4 +20,10 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", "~> 1.7"
   spec.add_development_dependency "rake", "~> 10.0"
+  spec.add_development_dependency "minitest"
+  spec.add_development_dependency "guard"
+  spec.add_development_dependency "guard-minitest"
+
+  spec.add_dependency "thor"
+  spec.add_dependency "spy_rb"
 end
