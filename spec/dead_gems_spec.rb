@@ -13,7 +13,7 @@ class DeadGemsSpec < Minitest::Spec
       end
 
       it 'doesnt output timecop in the list of unused gems' do
-        #assert !DeadGems.find_dead_gems(@project_path, @exerciser_command).include?('timecop')
+        assert !DeadGems.find_dead_gems(@project_path, @exerciser_command).include?('timecop')
       end
     end
   end

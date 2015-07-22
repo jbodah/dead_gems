@@ -4,19 +4,17 @@ module DeadGems
   class << self
     def find_dead_gems(project_root, exerciser)
       logger = Logger.new($stdout)
+      begin_dir = Dir.pwd
       change_directory_to project_root
       unused = find_all_gems.select do |gem|
         logger.debug(gem)
-        loaded_modules = find_loaded_modules(gem)
-        if loaded_modules.empty?
-          logger.debug("Can't find analyzable modules for #{gem}")
-          next
-        end
-        logger.debug(loaded_modules)
-        apply_environment_patch(loaded_modules) do
+        gem_path = find_gem_path(gem)
+        apply_environment_patch(gem_path) do
           run(exerciser)
         end
       end
+    ensure
+      change_directory_to begin_dir
     end
 
     private
@@ -34,28 +32,22 @@ module DeadGems
       end
     end
 
-    # TODO maybe load ALL other gems then load this gem and see what it provides that others dont
-    # alternative would be to use source_location
-    def find_loaded_modules(gem)
-      # TODO silence errors
+    def find_gem_path(gem)
       Bundler.with_clean_env do
-        `bundle exec ruby -e "pre = ObjectSpace.each_object(Module).to_set;
-                              require '#{gem}';
-                              post = ObjectSpace.each_object(Module).to_set;
-                              puts (post - pre).to_a"`.split("\n")
+        `bundle list #{gem}`.chomp
       end
     end
 
-    def apply_environment_patch(modules)
+    def apply_environment_patch(gem_path)
       file = 'test/test_helper.rb'
       prepatch = File.read(file)
       patch = <<-END
-modules = #{modules}.to_set
+gem_path = '#{gem_path}'
 trace = TracePoint.new(:call) do |tp|
   # Gem is used
   # Fail if any of the modules are called
-  if modules.include?(tp.defined_class.to_s)
-    puts "Gem used: \#{tp.defined_class} called with \#{tp.method_id}"
+  if tp.path.include?(gem_path)
+    puts "Gem used: \#{tp.defined_class} called with \#{tp.method_id} in \#{tp.path}"
     exit(1)
   end
 end
