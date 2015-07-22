@@ -1,22 +1,24 @@
 require "dead_gems/version"
+require "logger"
+require "bundler"
 
 module DeadGems
+  GemInstance = Struct.new(:name, :path)
+
   class << self
-    def find_dead_gems(project_root, exerciser)
+    def find(project_root, exerciser)
+      begin_dir = Dir.pwd
       logger = Logger.new($stdout)
       change_directory_to project_root
-      unused = find_all_gems.select do |gem|
-        logger.debug(gem)
-        loaded_modules = find_loaded_modules(gem)
-        if loaded_modules.empty?
-          logger.debug("Can't find analyzable modules for #{gem}")
-          next
-        end
-        logger.debug(loaded_modules)
-        apply_environment_patch(loaded_modules) do
-          run(exerciser)
-        end
+      gems = find_all_gems.map do |name|
+        path = find_gem_path(name)
+        GemInstance.new(name, path)
       end
+      apply_environment_patch(gems) do
+        run(exerciser, gems)
+      end
+    ensure
+      change_directory_to begin_dir
     end
 
     private
@@ -34,29 +36,24 @@ module DeadGems
       end
     end
 
-    # TODO maybe load ALL other gems then load this gem and see what it provides that others dont
-    # alternative would be to use source_location
-    def find_loaded_modules(gem)
-      # TODO silence errors
+    def find_gem_path(gem)
       Bundler.with_clean_env do
-        `bundle exec ruby -e "pre = ObjectSpace.each_object(Module).to_set;
-                              require '#{gem}';
-                              post = ObjectSpace.each_object(Module).to_set;
-                              puts (post - pre).to_a"`.split("\n")
+        `bundle list #{gem}`.chomp
       end
     end
 
-    def apply_environment_patch(modules)
+    def apply_environment_patch(gems)
       file = 'test/test_helper.rb'
       prepatch = File.read(file)
       patch = <<-END
-modules = #{modules}.to_set
+gem_paths = #{gems.map(&:path)}
 trace = TracePoint.new(:call) do |tp|
   # Gem is used
-  # Fail if any of the modules are called
-  if modules.include?(tp.defined_class.to_s)
-    puts "Gem used: \#{tp.defined_class} called with \#{tp.method_id}"
-    exit(1)
+  # Print to file
+  if path = gem_paths.detect {|p| tp.path.include?(p)}
+    puts "Gem used: \#{tp.defined_class} called with \#{tp.method_id} in \#{tp.path}"
+    File.open('dead_gems.out', 'a') {|f| f.puts path}
+    gem_paths.delete(path)
   end
 end
 trace.enable
@@ -65,13 +62,19 @@ trace.enable
       yield
     ensure
       File.open(file, 'w') { |f| f.write(prepatch) }
+      File.delete('dead_gems.out') if File.exists?('dead_gems.out')
     end
 
-    def run(exerciser)
-      res = Bundler.with_clean_env do
+    def run(exerciser, gems)
+      Bundler.with_clean_env do
         # If all tests pass then the gem is unused.
         # Otherwise it would've have exited on-call.
         system exerciser
+        File.read('dead_gems.out').each_line do |line|
+          path = line.chomp
+          gems.delete_if {|g| g.path == path}
+        end
+        gems.map(&:name)
       end
     end
   end
