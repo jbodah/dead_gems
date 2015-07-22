@@ -35,6 +35,7 @@ module DeadGems
     end
 
     # TODO maybe load ALL other gems then load this gem and see what it provides that others dont
+    # alternative would be to use source_location
     def find_loaded_modules(gem)
       # TODO silence errors
       Bundler.with_clean_env do
