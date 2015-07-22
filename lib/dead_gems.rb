@@ -1,17 +1,21 @@
 require "dead_gems/version"
+require "logger"
+require "bundler"
 
 module DeadGems
+  GemInstance = Struct.new(:name, :path)
+
   class << self
-    def find_dead_gems(project_root, exerciser)
-      logger = Logger.new($stdout)
+    def find(project_root, exerciser)
       begin_dir = Dir.pwd
+      logger = Logger.new($stdout)
       change_directory_to project_root
-      unused = find_all_gems.select do |gem|
-        logger.debug(gem)
-        gem_path = find_gem_path(gem)
-        apply_environment_patch(gem_path) do
-          run(exerciser)
-        end
+      gems = find_all_gems.map do |name|
+        path = find_gem_path(name)
+        GemInstance.new(name, path)
+      end
+      apply_environment_patch(gems) do
+        run(exerciser, gems)
       end
     ensure
       change_directory_to begin_dir
@@ -38,17 +42,18 @@ module DeadGems
       end
     end
 
-    def apply_environment_patch(gem_path)
+    def apply_environment_patch(gems)
       file = 'test/test_helper.rb'
       prepatch = File.read(file)
       patch = <<-END
-gem_path = '#{gem_path}'
+gem_paths = #{gems.map(&:path)}
 trace = TracePoint.new(:call) do |tp|
   # Gem is used
-  # Fail if any of the modules are called
-  if tp.path.include?(gem_path)
+  # Print to file
+  if path = gem_paths.detect {|p| tp.path.include?(p)}
     puts "Gem used: \#{tp.defined_class} called with \#{tp.method_id} in \#{tp.path}"
-    exit(1)
+    File.open('dead_gems.out', 'a') {|f| f.puts path}
+    gem_paths.delete(path)
   end
 end
 trace.enable
@@ -57,13 +62,19 @@ trace.enable
       yield
     ensure
       File.open(file, 'w') { |f| f.write(prepatch) }
+      File.delete('dead_gems.out') if File.exists?('dead_gems.out')
     end
 
-    def run(exerciser)
-      res = Bundler.with_clean_env do
+    def run(exerciser, gems)
+      Bundler.with_clean_env do
         # If all tests pass then the gem is unused.
         # Otherwise it would've have exited on-call.
         system exerciser
+        File.read('dead_gems.out').each_line do |line|
+          path = line.chomp
+          gems.delete_if {|g| g.path == path}
+        end
+        gems.map(&:name)
       end
     end
   end
