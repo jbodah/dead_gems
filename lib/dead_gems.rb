@@ -31,7 +31,7 @@ module DeadGems
       Bundler.with_clean_env do
         gem_lines = File.read('Gemfile.lock').split("DEPENDENCIES\n").last
         arr = []
-        gem_lines.each_line { |line| arr << line.match(/\s*(\S+)/).captures.first }
+        gem_lines.each_line { |line| arr << line.match(/\s*([^\s!]+)/).captures.first }
         arr
       end
     end

@@ -18,4 +18,21 @@ class DeadGemsSpec < Minitest::Spec
       end
     end
   end
+
+  describe '.find_all_gems' do
+    it 'correctly parses outs bangs' do
+      begin
+        str = <<-FILE
+DEPENDENCIES
+  test!
+FILE
+
+        original = File.method(:read)
+        File.define_singleton_method(:read, -> (f) { str })
+        assert DeadGems.send(:find_all_gems).any? {|g| g == 'test'}
+      ensure
+        File.define_singleton_method(:read, original)
+      end
+    end
+  end
 end
