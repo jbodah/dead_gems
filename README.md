@@ -20,7 +20,13 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+`DeadGems::find` is the main entry point. It takes the path to your project's root (which should contain your Gemfile) and a shell command to use in that project that should touch as much of your code as possible.
+
+```
+$ irb
+$ irb(main)> require 'dead_gems'
+$ irb(main)> DeadGems.find('~/my_slow_project', 'bundle exec rake test') 
+```
 
 ## Contributing
 
