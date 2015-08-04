@@ -10,6 +10,7 @@ module DeadGems
       begin_dir = Dir.pwd
       logger = Logger.new($stdout)
       change_directory_to project_root
+      bundle_install
       gems = find_all_gems.map do |name|
         path = find_gem_path(name)
         GemInstance.new(name, path)
@@ -33,6 +34,12 @@ module DeadGems
         arr = []
         gem_lines.each_line { |line| arr << line.match(/\s*([^\s!]+)/).captures.first }
         arr
+      end
+    end
+
+    def bundle_install
+      Bundler.with_clean_env do
+        `bundle install`
       end
     end
 
