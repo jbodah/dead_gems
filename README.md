@@ -1,6 +1,7 @@
 # DeadGems
 
 [![Gem Version](https://badge.fury.io/rb/dead_gems.svg)](http://badge.fury.io/rb/dead_gems)
+[![Build Status](https://travis-ci.org/jbodah/dead_gems.svg)](https://travis-ci.org/jbodah/dead_gems)
 
 lists your app's unused gems
 
