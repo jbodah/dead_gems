@@ -1,6 +1,6 @@
 # DeadGems
 
-- assumes using bundler
+lists the unused gems in your application
 
 ## Installation
 
