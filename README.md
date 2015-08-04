@@ -24,7 +24,7 @@ Or install it yourself as:
 
 **NOTE** This will take a long time as it uses [TracePoint](http://ruby-doc.org/core-2.0.0/TracePoint.html) to check the source location of every method call to see if the code being leveraged is in a gem directory.
 
-```
+```rb
 # First make sure to backup any changes you have (e.g. commit them to git, stash them, etc)
 $ irb
 $ irb(main)> require 'dead_gems'
