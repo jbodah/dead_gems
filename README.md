@@ -1,6 +1,6 @@
 # DeadGems
 
-lists the unused gems in your application
+lists your app's unused gems
 
 ## Installation
 
