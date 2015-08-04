@@ -1,5 +1,7 @@
 # DeadGems
 
+[![Gem Version](https://badge.fury.io/rb/dead_gems.svg)](http://badge.fury.io/rb/dead_gems)
+
 lists your app's unused gems
 
 ## Installation
