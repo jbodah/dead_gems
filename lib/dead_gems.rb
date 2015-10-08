@@ -30,10 +30,14 @@ module DeadGems
 
     def find_all_gems
       Bundler.with_clean_env do
-        gem_lines = File.read('Gemfile.lock').split("DEPENDENCIES\n").last
-        arr = []
-        gem_lines.each_line { |line| arr << line.match(/\s*([^\s!]+)/).captures.first }
-        arr
+        gem_lines = File.read('Gemfile.lock').split("DEPENDENCIES\n").last.split("\n\n").first
+        gem_lines.each_line.reduce([]) do |arr, line|
+          begin
+            arr << line.match(/\s*([^\s!]+)/).captures.first
+          rescue => e
+            raise "Encountered #{e} on line: #{line}"
+          end
+        end
       end
     end
 
