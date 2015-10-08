@@ -23,31 +23,27 @@ class DeadGemsSpec < Minitest::Spec
   describe '.find_all_gems' do
     it 'correctly parses the example lock files' do
       Dir['spec/fixtures/lock_file*'].each do |path|
-        begin
-          str = File.read(path)
-
-          original = File.method(:read)
-          File.define_singleton_method(:read, -> (f) { str })
-          DeadGems.send(:find_all_gems)
-        ensure
-          File.define_singleton_method(:read, original)
-        end
+        stub_file_read_with(File.read(path)) { DeadGems.send(:find_all_gems) }
       end
     end
 
     it 'correctly parses outs bangs' do
-      begin
-        str = <<-FILE
+      str = <<-FILE
 DEPENDENCIES
   test!
 FILE
 
-        original = File.method(:read)
-        File.define_singleton_method(:read, -> (f) { str })
+      stub_file_read_with(str) do
         assert DeadGems.send(:find_all_gems).any? {|g| g == 'test'}
-      ensure
-        File.define_singleton_method(:read, original)
       end
     end
+  end
+
+  def stub_file_read_with(v, &block)
+    original = File.method(:read)
+    File.define_singleton_method(:read, Proc.new { |f| v })
+    yield
+  ensure
+    File.define_singleton_method(:read, original)
   end
 end
