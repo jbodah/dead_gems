@@ -4,6 +4,7 @@ class DeadGemsSpec < Minitest::Spec
   describe '.find' do
     describe 'given the dummy app and the test shell command' do
       before do
+        skip("Can't run dummy tests on Travis") if ENV['IS_TRAVIS']
         @project_path = File.expand_path('../../dummy', __FILE__)
         @exerciser_command = 'bundle exec rake &> /dev/null'
       end
