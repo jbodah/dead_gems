@@ -6,7 +6,7 @@ module DeadGems
   GemInstance = Struct.new(:name, :path)
 
   class << self
-    def find(project_root, exerciser)
+    def find(project_root, exerciser, test_helper: 'test/test_helper.rb')
       begin_dir = Dir.pwd
       logger = Logger.new($stdout)
       change_directory_to project_root
@@ -15,7 +15,7 @@ module DeadGems
         path = find_gem_path(name)
         GemInstance.new(name, path)
       end
-      apply_environment_patch(gems) do
+      apply_environment_patch(gems, test_helper) do
         run(exerciser, gems)
       end
     ensure
@@ -53,9 +53,8 @@ module DeadGems
       end
     end
 
-    def apply_environment_patch(gems)
-      file = 'test/test_helper.rb'
-      prepatch = File.read(file)
+    def apply_environment_patch(gems, test_helper)
+      prepatch = File.read(test_helper)
       patch = <<-END
 gem_paths = #{gems.map(&:path)}
 trace = TracePoint.new(:call) do |tp|
@@ -69,10 +68,10 @@ trace = TracePoint.new(:call) do |tp|
 end
 trace.enable
       END
-      File.open(file, 'w') { |f| f.write([prepatch, patch].join("\n")) }
+      File.open(test_helper, 'w') { |f| f.write([prepatch, patch].join("\n")) }
       yield
     ensure
-      File.open(file, 'w') { |f| f.write(prepatch) }
+      File.open(test_helper, 'w') { |f| f.write(prepatch) }
       File.delete('dead_gems.out') if File.exists?('dead_gems.out')
     end
 
