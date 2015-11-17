@@ -31,7 +31,10 @@ Or install it yourself as:
 # First make sure to backup any changes you have (e.g. commit them to git, stash them, etc)
 $ irb
 $ irb(main)> require 'dead_gems'
-$ irb(main)> DeadGems.find('~/my_slow_project', 'bundle exec rake test') 
+$ irb(main)> DeadGems.find('~/my_slow_project', 'bundle exec rake test')
+
+# You can also specify the path to your test helper if you are using RSpec or something
+$ irb(main)> DeadGems.find('~/my_slow_project', 'bundle exec rake test', test_helper: 'spec/spec_helper.rb')
 ```
 
 This will run my project's tests and output all of the gems that aren't used in my tests.

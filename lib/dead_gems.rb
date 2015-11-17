@@ -6,7 +6,8 @@ module DeadGems
   GemInstance = Struct.new(:name, :path)
 
   class << self
-    def find(project_root, exerciser, test_helper: 'test/test_helper.rb')
+    def find(project_root, exerciser, opts = {})
+      test_helper = opts[:test_helper] || 'test/test_helper.rb'
       begin_dir = Dir.pwd
       logger = Logger.new($stdout)
       change_directory_to project_root
