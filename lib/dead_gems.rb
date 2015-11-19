@@ -16,8 +16,8 @@ module DeadGems
         path = find_gem_path(name)
         GemInstance.new(name, path)
       end
-      apply_environment_patch(gems, test_helper) do
-        run(exerciser, gems)
+      apply_environment_patch(gems, test_helper) do |outfile|
+        run(exerciser, gems, outfile)
       end
     ensure
       change_directory_to begin_dir
@@ -55,6 +55,7 @@ module DeadGems
     end
 
     def apply_environment_patch(gems, test_helper)
+      outfile = Tempfile.new('deadgems')
       prepatch = File.read(test_helper)
       patch = <<-END
 gem_paths = #{gems.map(&:path)}
@@ -63,25 +64,26 @@ trace = TracePoint.new(:call) do |tp|
   # Print to file
   if path = gem_paths.detect {|p| tp.path.include?(p)}
     puts "Gem used: \#{tp.defined_class} called with \#{tp.method_id} in \#{tp.path}"
-    File.open('dead_gems.out', 'a') {|f| f.puts path}
+    File.open('#{outfile.path}', 'a') {|f| f.puts path}
     gem_paths.delete(path)
   end
 end
 trace.enable
       END
       File.open(test_helper, 'w') { |f| f.write([prepatch, patch].join("\n")) }
-      yield
+      yield outfile
     ensure
       File.open(test_helper, 'w') { |f| f.write(prepatch) }
-      File.delete('dead_gems.out') if File.exists?('dead_gems.out')
+      outfile.close
+      outfile.unlink
     end
 
-    def run(exerciser, gems)
+    def run(exerciser, gems, outfile)
       Bundler.with_clean_env do
         # If all tests pass then the gem is unused.
         # Otherwise it would've have exited on-call.
         system exerciser
-        File.read('dead_gems.out').each_line do |line|
+        outfile.read.each_line do |line|
           path = line.chomp
           gems.delete_if {|g| g.path == path}
         end
